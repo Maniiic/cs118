@@ -1,0 +1,13 @@
+/* 
+ * Ex1 Preamble
+ *
+ * Both the nonwallExits and passageExits methods are handled similarly as I am iterating through each direction and checking if that direction corresponds to anything other than a wall for the nonwallExits and only a passage for the passageExits.
+ * For each instance of nonwall/passage the exits variable that gets returned is incremented by 1.
+ * Depending on the number of nonwalls around the robot, the corresponding method is called.
+ * For a dead end, I was tempted to make it just go ahead if there isn't a wall and reverse if there is but for the start case the passage might not be behind the robot so I chose to iterate through the directions to find the only nonwall direction and go that way.
+ * For a corridor or corner, I need to find the direction of a nonwall which is not from the direction the robot just came from so I changed the amount i iterate through and started so that it wouldn't check behind.
+ * For a junction and crossroads, I want to check the number of passages and choose randomly from them and if there are none I chose randomly from the nonwalls.
+ * To choose them randomly, I added the directions to an array.
+ * 
+ * 
+ */
