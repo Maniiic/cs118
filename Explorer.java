@@ -26,92 +26,124 @@ import java.util.List;
 
 public class Explorer
 {
-    public int nonwallExits(IRobot robot) {
-        int nonwalls = 0;
+    public List<Integer> getPrioritisedDirections(IRobot robot) {
+        List<Integer> prioritisedDirections = new ArrayList<>();
+
         for (int i = 0; i < 4; i++) {
-			if (robot.look(IRobot.AHEAD + i) != IRobot.WALL) {
-                nonwalls++;
+            if (robot.look(IRobot.AHEAD + i) == IRobot.PASSAGE) {  
+                prioritisedDirections.add(IRobot.AHEAD + i);
             }
         }
+        
+        return prioritisedDirections;
+    }
+
+    public List<Integer> getPossibleDirections(IRobot robot) {
+        List<Integer> possibleDirections = new ArrayList<>();
+
+        for (int i = 0; i < 4; i++) {
+            if (robot.look(IRobot.AHEAD + i) != IRobot.WALL) {
+                possibleDirections.add(IRobot.AHEAD + i);
+            }
+        }
+        return possibleDirections;
+    }
+
+    public int nonwallExits(IRobot robot) {
+        List<Integer> possibleDirections = getPossibleDirections(robot);
+        int nonwalls = possibleDirections.size();
         return nonwalls;
     }
 
-    public int deadEnd(IRobot robot) {
-        int direction;
-        System.out.println("Dead end");
-        for (int i = 0; i < 4; i++) {
-			if (robot.look(IRobot.AHEAD + i) != IRobot.WALL) {
-                direction = IRobot.AHEAD + i
-            }
-        }
+    public int passageExits(IRobot robot) {
+        List<Integer> prioritisedDirections = getPrioritisedDirections(robot);
+        int passages = prioritisedDirections.size();
+        return passages;
+    }
 
+    public int chooseRandDir(List<Integer> directions) {
+		int randno;
+		int direction;
+
+		// Select a random integer corresponding to each element in the array
+		randno = (int) Math.floor(Math.random()*directions.size());
+
+		// Choose the associated direction
+        direction = directions.get(randno);
+		return direction;
+    }
+
+    public int deadEnd(IRobot robot) {
+        int direction = IRobot.AHEAD;
+        System.out.println("Dead end");
+        direction = getPossibleDirections(robot).get(0);
         return direction;
     }
 
     public int corridor(IRobot robot) {
         int direction = IRobot.AHEAD;
+        List<Integer> possibleDirections = getPossibleDirections(robot);
+        possibleDirections.remove(Integer.valueOf(IRobot.BEHIND));
+        direction = possibleDirections.get(0);
         System.out.println("Corridor");
-        for (int i = 0; i < 3; i++) { // i < 3 to avoid choosing backwards direction
-			if (robot.look(IRobot.LEFT + i) != IRobot.WALL)
-                direction = IRobot.LEFT + i;
-        }
         return direction;
     }
 
     public int junction(IRobot robot) {
-        int direction;
-        List<Integer> possibleDirections = new ArrayList<>();
-        List<Integer> prioritisedDirections = new ArrayList<>();
+        int direction = IRobot.AHEAD;
+        List<Integer> possibleDirections = getPossibleDirections(robot);
+        possibleDirections.remove(Integer.valueOf(IRobot.BEHIND));
+        List<Integer> prioritisedDirections = getPrioritisedDirections(robot);
         System.out.println("Junction");    
-        for (int i = 0; i < 4; i++) {
-			if (robot.look(IRobot.AHEAD + i) == IRobot.PASSAGE) {  
-                prioritisedDirections.add(IRobot.AHEAD + i);
-            }
-            else if (robot.look(IRobot.AHEAD + i) != IRobot.WALL) {
-                possibleDirections.add(IRobot.AHEAD + i);
-            }
+        
+        if (prioritisedDirections.size() != 0) {
+            direction = chooseRandDir(prioritisedDirections);
+        }
+        else if (possibleDirections.size() != 0) {
+            direction = chooseRandDir(possibleDirections);
         }
 
         return direction;
     }
 
     public int crossroads(IRobot robot) {
-        int direction;
+        int direction = IRobot.AHEAD;
+        List<Integer> possibleDirections = getPossibleDirections(robot);
+        possibleDirections.remove(Integer.valueOf(IRobot.BEHIND));
+        List<Integer> prioritisedDirections = getPrioritisedDirections(robot);
         System.out.println("Crossroads");
+        
+        if (prioritisedDirections.size() != 0) {
+            direction = chooseRandDir(prioritisedDirections);
+        }
+        else if (possibleDirections.size() != 0) {
+            direction = chooseRandDir(possibleDirections);
+        }
+        
         return direction;
     }
 
-    public int genRandomDirection() {
-		int randno;
-		int direction;
-
-		// Select a random number 0-3
-		randno = (int) Math.floor(Math.random()*3);
-
-		// Convert this to a direction
-        direction = IRobot.AHEAD + randno;
-		return direction;
-    }
 
     public void controlRobot(IRobot robot) {
         int exits;
-        int direction;
+        int direction = IRobot.AHEAD;
 
         exits = nonwallExits(robot);
         System.out.println(exits);
 
-        if (exits == 1) 
+        if (exits == 1)
             direction = deadEnd(robot);
-        else if (exits == 2) 
+        else if (exits == 2)
             direction = corridor(robot);
-        else if (exits == 3) 
+        else if (exits == 3)
             direction = junction(robot);
         else if (exits == 4)
             direction = crossroads(robot);
         else
             System.out.println("Case not found");
+
+        robot.face(direction);
+
     }
-
-
-
+    
 }
