@@ -96,10 +96,10 @@ public class Explorer
         List<Integer> prioritisedDirections = getPrioritisedDirections(robot);
         System.out.println("Junction");    
         
-        if (prioritisedDirections.size() != 0) {
+        if (passageExits(robot) != 0) {
             direction = chooseRandDir(prioritisedDirections);
         }
-        else if (possibleDirections.size() != 0) {
+        else if (nonwallExits(robot) != 0) {
             direction = chooseRandDir(possibleDirections);
         }
 
@@ -113,10 +113,10 @@ public class Explorer
         List<Integer> prioritisedDirections = getPrioritisedDirections(robot);
         System.out.println("Crossroads");
         
-        if (prioritisedDirections.size() != 0) {
+        if (passageExits(robot) != 0) {
             direction = chooseRandDir(prioritisedDirections);
         }
-        else if (possibleDirections.size() != 0) {
+        else if (nonwallExits(robot) != 0) {
             direction = chooseRandDir(possibleDirections);
         }
         
@@ -143,7 +143,5 @@ public class Explorer
             System.out.println("Case not found");
 
         robot.face(direction);
-
     }
-    
 }
