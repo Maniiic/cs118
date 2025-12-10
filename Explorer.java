@@ -5,25 +5,10 @@
  */
 
 /* 
- * Ex1 Preamble
- *
- * Both the nonwallExits and passageExits methods are handled similarly as I am iterating through each direction and checking if that direction corresponds to anything other than a wall for the nonwallExits and only a passage for the passageExits.
- * For each instance of nonwall/passage the exits variable that gets returned is incremented by 1.
- * Depending on the number of nonwalls around the robot, the corresponding method is called.
- * For a dead end, I was tempted to make it just go ahead if there isn't a wall and reverse if there is but for the start case the passage might not be behind the robot so I chose to iterate through the directions to find the only nonwall direction and go that way.
- * For a corridor or corner, I need to find the direction of a nonwall which is not from the direction the robot just came from so I checked the possible directions and removed the direction it just came from which wouldn't work if the robot could start at a corridor or corner.
- * For a junction and crossroads, the code is the same as I want to check the number of passages and choose randomly from them and if there are none I chose randomly from the nonwalls.
- * To choose them randomly, I added the directions to an array and choose the direction based of a random index.
- * The program could potentially made more efficient by combining the methods that count the number of nonwalls, passages and been before squares as the same squares are being checked.
- * The same is probably true for the prioritised and possible directions as they are achieving very similar goals but seperating the functions makes it more modular.
- * 
- * For the robot data class I created an array composed of objects that record the x, y and the heading the robot arrived from.
- * The robot data class is also responsible for getting the header from given x, y coordinates and is able to add newly visited junctions to the array.
- * This is very useful when backtracking as the most recent header is needed to be able to go back the opposite way it entered from once all paths had been explored.
- * 
- * The explorer will always find the target assuming the maze is non-loopy.
- * In the worse case scenarion each empty square can be traversed twice so that would be the upper bound for the number of steps it will take.
- * 
+ * Ex2 Preamble
+ * I re-implemented the solution making use of a stack storing the heading as it arrived so that I could just store the potentially relevent information until the junction gets fully explored where it is no longer need and therefore removed from the stack.
+ * The LIFO structure suits the design of a depth first search as you return to the latest junction.
+ * This also saves space as the x, y coordinates are not necessary, only the heading is needed to be able to backtrack in the correct direction.
  */
 
 import uk.ac.warwick.dcs.maze.logic.IRobot;
@@ -31,6 +16,7 @@ import uk.ac.warwick.dcs.maze.logic.IRobot;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Stack;
 
 public class Explorer
 {
@@ -123,7 +109,7 @@ public class Explorer
         return direction;
     }
 
-    // For when the robot is at a corridor or a corner
+    // For when the robot is at a junction or crossroad
     public int junctionOrCrossroad(IRobot robot) {
         int direction = IRobot.AHEAD;
         List<Integer> possibleDirections = getPossibleDirections(robot);
@@ -142,8 +128,8 @@ public class Explorer
 
         // Check if junction is new
         if (beenbeforeExits(robot) <= 1) {
-            robotData.recordJuntion(robot.getLocation().x, robot.getLocation().y, robot.getHeading());
-            robotData.printJunction();
+            robotData.pushHeading(robot.getHeading());
+            
         }
         
         return direction;
@@ -196,7 +182,7 @@ public class Explorer
                 System.out.println("Exits > 2, junction");
             }
             else {
-                previousHeading = robotData.searchJunction(robot.getLocation().x, robot.getLocation().y);
+                previousHeading = robotData.popHeading();
                 // A shift by 2 gets opposite heading
                 if (previousHeading <= IRobot.EAST) {
                     newHeading = previousHeading + 2;
@@ -210,62 +196,61 @@ public class Explorer
         }
         // If its not then continue down path
         else {
-            if (exits == 1)
+            if (exits == 1) {
                 direction = deadEnd(robot);
-            else
+            }
+            else {
                 direction = corridor(robot);
+            }
             robot.face(direction);
         }
     }
 
     // Reset the counter for junction and set to exploring
     public void reset() {
-        robotData.resetJunctionCounter();
+        robotData.resetStack();
         explorerMode = 1;
     }
 }
 
 class RobotData 
 {
-    private static int maxJunctions = 10000; // Max number likely to occur
-    private static int junctionCounter; // No. of junctions stored
-    private JunctionRecorder[] junctions; // Array of junctions
+    Stack<Integer> headingStack;
     
-    // Create array and set counter to 0
+    // Create an empty stack
     public RobotData() {
-        junctions = new JunctionRecorder[maxJunctions];
-        junctionCounter = 0;
+        headingStack = new Stack<>();
     }
 
-    // Find junction header corresponding with juncX and juncY
-    public int searchJunction(int juncX, int juncY) {
-        int heading = -1;
-        JunctionRecorder checkJunciton;
-        // Iterate through the junctions and check if it is the previous one
-        for (int i = 0; i < junctionCounter; i++) {
-            checkJunciton = junctions[i];
-            if (checkJunciton.getJuncX() == juncX && checkJunciton.getJuncY() == juncY) {
-                heading = checkJunciton.getArrived();
-            }
-        }
-        return heading;
-    }
-
-    // Add junction to end of array
-    public void recordJuntion(int juncX, int juncY, int arrived) {
-        junctions[junctionCounter] = new JunctionRecorder(juncX, juncY, arrived);
-        junctionCounter++;
+    // Add heading onto stack
+    public void pushHeading(int heading) {
+        headingStack.push(heading);
+        System.out.println("Pushing " + headingToString(heading));
     }
     
-    // Output info about latest junction
-    public void printJunction() { 
-        JunctionRecorder previousJunction = junctions[junctionCounter - 1];
-        System.out.println("Junction " + junctionCounter + " (x=" + previousJunction.getJuncX() + ",y=" + previousJunction.getJuncY() + ") heading " + headingToString(previousJunction.getArrived()) + previousJunction.getArrived());
+    // Removes and returns top of the stack
+    public int popHeading() {
+        int heading;
+        if (!(isEmpty())) {
+            heading = headingStack.pop();
+            System.out.println("Poping " + headingToString(heading));
+            return heading;
+        }
+        System.out.println("Nothing to pop");
+        return -1;
+    }
+
+    public boolean isEmpty() {
+        if (headingStack.isEmpty()) {
+            System.out.println("Empty stack");
+            return true;
+        }
+        return false;
     }
 
     // Set number of junctions to 0
-    public void resetJunctionCounter() {
-        junctionCounter = 0;
+    public void resetStack() {
+        headingStack.clear();
     }
 
     // Get the string corresponding to a heading
@@ -286,29 +271,5 @@ class RobotData
                 break;
         }
         return headingAsString;
-    }
-}
-
-class JunctionRecorder {
-    private int juncX;
-    private int juncY;
-    private int arrived;
-
-    // Record x,y and heading arrived from
-    public JunctionRecorder(int juncX, int juncY, int arrived) {
-        this.juncX = juncX;
-        this.juncY = juncY;
-        this.arrived = arrived;
-    }
-
-    // Getters
-    public int getJuncX() {
-        return juncX;
-    }
-    public int getJuncY() {
-        return juncY;
-    }
-    public int getArrived() {
-        return arrived;
     }
 }
